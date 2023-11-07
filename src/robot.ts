@@ -6,7 +6,7 @@ export interface RobotConstructorOptions {
 }
 
 export class Robot {
-  #url: string
+  #url?: string
   #timeout: number
 
   constructor(opts: RobotConstructorOptions) {
