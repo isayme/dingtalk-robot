@@ -1,7 +1,10 @@
 import axios from 'axios'
+import { createHmac } from 'crypto'
 
 interface RobotConstructorOptions {
   url?: string
+  accessToken?: string
+  secret?: string
   timeout?: number
 }
 
@@ -15,7 +18,7 @@ interface ILinkReq {
   text: string
   title: string
   messageUrl: string
-  picUrl: string
+  picUrl?: string
 }
 
 interface ITextReq {
@@ -31,20 +34,20 @@ interface IMarkdownReq {
 
 interface IActionCardButton {
   title: string
-  action_url: string
+  actionURL: string
 }
 type IActionCardReq =
   | {
       title: string
       text: string
-      single_title: string
-      single_url: string
+      singleTitle: string
+      singleURL: string
     }
   | {
       title: string
       text: string
-      btn_orientation: '0' | '1'
-      btn_json_list: IActionCardButton[]
+      btnOrientation: '0' | '1'
+      btns: IActionCardButton[]
     }
 
 interface IFeedCardLink {
@@ -59,10 +62,16 @@ interface IFeedCardReq {
 
 class Robot {
   #url?: string
+  #secret?: string
   #timeout: number
 
   constructor(opts: RobotConstructorOptions) {
     this.#url = opts.url
+    if (opts.accessToken) {
+      this.#url = `https://oapi.dingtalk.com/robot/send?access_token=${opts.accessToken}`
+    }
+
+    this.#secret = opts.secret
     this.#timeout = opts.timeout || 3000
     if (!this.#url) {
       console.warn('url is empty, all operations will ignore')
@@ -74,6 +83,18 @@ class Robot {
       return
     }
 
+    let params = {}
+    if (this.#secret) {
+      let timestamp = Date.now()
+      let h = createHmac('sha256', this.#secret)
+      h.update(`${timestamp}\n${this.#secret}`)
+      let sign = encodeURIComponent(h.digest('base64'))
+      params = {
+        timestamp,
+        sign,
+      }
+    }
+
     return axios
       .request({
         method: 'POST',
@@ -82,6 +103,7 @@ class Robot {
         headers: {
           'Content-Type': 'application/json',
         },
+        params,
         data: JSON.stringify(data),
       })
       .then((resp) => {
@@ -142,6 +164,13 @@ class Robot {
         text,
         at,
       },
+    })
+  }
+
+  link(data: ILinkReq) {
+    return this.request({
+      msgtype: 'link',
+      link: data,
     })
   }
 
