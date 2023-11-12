@@ -13,7 +13,7 @@ npm install '@isayme/dingtalk-robot'
 pnpm add '@isayme/dingtalk-robot'
 ```
 
-## 使用包
+## 引用模块
 
 ```
 // CommonJS
@@ -33,7 +33,7 @@ let dingtalkRobot = new Robot({
 })
 
 async function main() {
-  dingtalkRobot.text('这个是测试消息')
+  await dingtalkRobot.text('这个是测试消息')
 }
 
 main()
