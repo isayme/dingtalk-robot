@@ -1,5 +1,28 @@
 import axios from 'axios'
+import axiosRetry from 'axios-retry'
 import { createHmac } from 'crypto'
+
+const axiosInstance = axios.create()
+axiosInstance.interceptors.request.use(function (request) {
+  request.params = request.params || {}
+  request.params['_'] = Date.now()
+
+  return request
+})
+
+axiosRetry(axiosInstance, {
+  retries: 10,
+  retryDelay: function () {
+    return 1000
+  },
+  retryCondition: function (err) {
+    if (axiosRetry.isNetworkOrIdempotentRequestError(err)) {
+      return true
+    }
+
+    return false
+  },
+})
 
 interface RobotConstructorOptions {
   url?: string
@@ -95,7 +118,7 @@ class Robot {
       }
     }
 
-    return axios
+    return axiosInstance
       .request({
         method: 'POST',
         url: this.#url,
@@ -132,6 +155,7 @@ class Robot {
       content = arg.content
       at = arg.at
     }
+
     return this.request({
       msgtype: 'text',
       text: {
