@@ -12,6 +12,7 @@ axiosInstance.interceptors.request.use(function (request) {
 
 axiosRetry(axiosInstance, {
   retries: 10,
+  shouldResetTimeout: true,
   retryDelay: function () {
     return 1000
   },
