@@ -1,7 +1,8 @@
 # 支持的特性
 
-- 支持 secret 签名
-- 支持 text/markdown/link/actionCard/feedCard 5 种消息类型
+- 支持 secret 签名；
+- 支持 text/markdown/link/actionCard/feedCard 5 种消息类型；
+- 自动重试（间隔 1s）；
 
 # 快速使用
 
