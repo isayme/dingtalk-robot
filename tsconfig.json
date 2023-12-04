@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    "rootDir": "src",
     "moduleResolution": "node",
     "esModuleInterop": true,
     "declaration": true,
@@ -11,6 +10,6 @@
     "target": "ES2015",
     "declarationDir": "dist"
   },
-  "include": ["src"],
+  "include": ["src", "test"],
   "exclude": ["node_modules", "dist"]
 }

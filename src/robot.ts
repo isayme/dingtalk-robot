@@ -1,35 +1,13 @@
-import axios from 'axios'
+import axios, { AxiosInstance } from 'axios'
 import axiosRetry from 'axios-retry'
 import { createHmac } from 'crypto'
-
-const axiosInstance = axios.create()
-axiosInstance.interceptors.request.use(function (request) {
-  request.params = request.params || {}
-  request.params['_'] = Date.now()
-
-  return request
-})
-
-axiosRetry(axiosInstance, {
-  retries: 10,
-  shouldResetTimeout: true,
-  retryDelay: function () {
-    return 1000
-  },
-  retryCondition: function (err) {
-    if (axiosRetry.isNetworkOrIdempotentRequestError(err)) {
-      return true
-    }
-
-    return false
-  },
-})
 
 interface RobotConstructorOptions {
   url?: string
   accessToken?: string
   secret?: string
   timeout?: number
+  retries?: number
 }
 
 interface IMentions {
@@ -88,6 +66,8 @@ class Robot {
   #url?: string
   #secret?: string
   #timeout: number
+  #retries: number
+  #axiosInstance: AxiosInstance
 
   constructor(opts: RobotConstructorOptions) {
     this.#url = opts.url
@@ -100,6 +80,48 @@ class Robot {
     if (!this.#url) {
       console.warn('url is empty, all operations will ignore')
     }
+
+    let axiosInstance = axios.create({
+      validateStatus: function (status: number) {
+        return status >= 200 && status < 300
+      },
+    })
+    this.#axiosInstance = axiosInstance
+    axiosInstance.interceptors.request.use(function (request) {
+      request.params = request.params || {}
+      request.params['_'] = Date.now()
+
+      return request
+    })
+
+    this.#retries = opts.retries || 10
+
+    axiosRetry(axiosInstance, {
+      retries: this.#retries,
+      shouldResetTimeout: true,
+      retryDelay: function () {
+        return 1000
+      },
+      retryCondition: function (err) {
+        if (axiosRetry.isNetworkOrIdempotentRequestError(err)) {
+          return true
+        }
+
+        if (err.code === 'ECONNABORTED' && err.message.includes('timeout')) {
+          return true
+        }
+
+        if (err.code === 'ETIMEDOUT') {
+          return true
+        }
+
+        if (err.response && err.response.status >= 500) {
+          return true
+        }
+
+        return false
+      },
+    })
   }
 
   request(data: object) {
@@ -119,7 +141,7 @@ class Robot {
       }
     }
 
-    return axiosInstance
+    return this.#axiosInstance
       .request({
         method: 'POST',
         url: this.#url,
@@ -131,11 +153,6 @@ class Robot {
         data: JSON.stringify(data),
       })
       .then((resp) => {
-        let status = resp.status
-        if (status >= 300) {
-          throw new Error(`request dingtaik fail, status ${status}`)
-        }
-
         let { errcode, errmsg } = resp.data
         if (errcode !== 0) {
           throw new Error(
