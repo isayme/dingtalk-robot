@@ -156,7 +156,7 @@ class Robot {
         let { errcode, errmsg } = resp.data
         if (errcode !== 0) {
           throw new Error(
-            `request dingtaik fail, errorcode '${errcode}', errormsg '${errmsg}'`,
+            `request dingtalk fail, errorcode '${errcode}', errormsg '${errmsg}'`,
           )
         }
       })
